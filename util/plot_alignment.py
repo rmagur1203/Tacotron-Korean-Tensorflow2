@@ -5,8 +5,8 @@ import tensorflow as tf
 matplotlib.use('Agg')
 
 
-font_name = fm.FontProperties(fname="c:/Windows/Fonts/malgun.ttf").get_name()
-matplotlib.rc('font', family=font_name, size=14)
+# font_name = fm.FontProperties(fname="c:/Windows/Fonts/malgun.ttf").get_name()
+matplotlib.rc('font', family='NanumBarunGothic', size=14)
 
 
 def plot_alignment(alignment, path, text):
