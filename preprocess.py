@@ -42,7 +42,7 @@ for idx, fn in enumerate(tqdm(wav_dir)):
     wav = np.append(wav[0], wav[1:] - preemphasis * wav[:-1])
     stft = librosa.stft(wav, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
     stft = np.abs(stft)
-    mel_filter = librosa.filters.mel(sample_rate, n_fft, mel_dim)
+    mel_filter = librosa.filters.mel(sr=sample_rate, n_fft=n_fft, n_mels=mel_dim)
     mel_spec = np.dot(mel_filter, stft)
 
     mel_spec = 20 * np.log10(np.maximum(1e-5, mel_spec))
