@@ -13,6 +13,13 @@ from util.hparams import *
 from util.plot_alignment import plot_alignment
 from util.text import sequence_to_text
 
+resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
+    tpu='grpc://' + os.environ['COLAB_TPU_ADDR'])
+
+tf.config.experimental_connect_to_cluster(resolver)
+tf.tpu.experimental.initialize_tpu_system(resolver)
+
+strategy = tf.distribute.TPUStrategy(resolver)
 
 data_dir = './data'
 text_list = sorted(glob.glob(os.path.join(data_dir + '/text', '*.npy')))
@@ -68,18 +75,8 @@ def train_step(enc_input, dec_input, dec_target, text_length):
     return loss, pred[0], alignment[0]
 
 
-dataset = tf.data.Dataset.from_generator(generator=DataGenerator,
-                                         output_types=(
-                                             tf.float32, tf.float32, tf.float32, tf.int32),
-                                         output_shapes=(tf.TensorShape([batch_size, None]),
-                                                        tf.TensorShape(
-                                                            [batch_size, None, mel_dim]),
-                                                        tf.TensorShape(
-                                                            [batch_size, None, mel_dim]),
-                                                        tf.TensorShape([batch_size])))\
-    .prefetch(tf.data.experimental.AUTOTUNE)
-
-model = Tacotron(K=16, conv_dim=[128, 128])
+with strategy.scope():
+    model = Tacotron(K=16, conv_dim=[128, 128])
 optimizer = Adam()
 step = tf.Variable(0)
 
@@ -93,17 +90,19 @@ if manager.latest_checkpoint:
     print('Restore checkpoint from {}'.format(manager.latest_checkpoint))
 
 try:
-    for text, dec, mel, text_length in dataset:
+    for text, dec, mel, text_length in DataGenerator():
         loss, pred, alignment = train_step(text, dec, mel, text_length)
         checkpoint.step.assign_add(1)
         print("Step: {}, Loss: {:.5f}".format(int(checkpoint.step), loss))
 
         if int(checkpoint.step) % checkpoint_step == 0:
-            checkpoint.save(file_prefix=os.path.join(
-                checkpoint_dir, 'step-{}'.format(int(checkpoint.step))))
+            local_device_option = tf.train.CheckpointOptions(
+                experimental_io_device="/job:localhost")
+            checkpoint.write(file_prefix=os.path.join(
+                checkpoint_dir, 'step-{}'.format(int(checkpoint.step))), options=local_device_option)
 
-            input_seq = sequence_to_text(text[0].numpy())
-            input_seq = input_seq[:text_length[0].numpy()]
+            input_seq = sequence_to_text(text[0])
+            input_seq = input_seq[:text_length[0]]
             alignment_dir = os.path.join(
                 checkpoint_dir, 'step-{}-align.png'.format(int(checkpoint.step)))
             plot_alignment(alignment, alignment_dir, input_seq)
