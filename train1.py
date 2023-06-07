@@ -80,12 +80,14 @@ with strategy.scope():
 optimizer = Adam()
 step = tf.Variable(0)
 
+local_device_option = tf.train.CheckpointOptions(
+    experimental_io_device="/job:localhost")
 checkpoint_dir = './checkpoint/1'
 os.makedirs(checkpoint_dir, exist_ok=True)
 checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model, step=step)
 manager = tf.train.CheckpointManager(checkpoint, checkpoint_dir, max_to_keep=5)
 
-checkpoint.restore(manager.latest_checkpoint)
+checkpoint.restore(manager.latest_checkpoint, local_device_option)
 if manager.latest_checkpoint:
     print('Restore checkpoint from {}'.format(manager.latest_checkpoint))
 
@@ -96,9 +98,7 @@ try:
         print("Step: {}, Loss: {:.5f}".format(int(checkpoint.step), loss))
 
         if int(checkpoint.step) % checkpoint_step == 0:
-            local_device_option = tf.train.CheckpointOptions(
-                experimental_io_device="/job:localhost")
-            checkpoint.write(file_prefix=os.path.join(
+            checkpoint.save(file_prefix=os.path.join(
                 checkpoint_dir, 'step-{}'.format(int(checkpoint.step))), options=local_device_option)
 
             input_seq = sequence_to_text(text[0])
