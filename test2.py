@@ -1,4 +1,7 @@
-import os, librosa, glob, scipy
+import os
+import librosa
+import glob
+import scipy
 import tensorflow as tf
 import numpy as np
 import soundfile as sf
@@ -11,7 +14,7 @@ from util.hparams import *
 checkpoint_dir = './checkpoint/2'
 save_dir = './output'
 os.makedirs(save_dir, exist_ok=True)
-mel_list = glob.glob(os.path.join(save_dir, '*.npy'))
+mel_list = sorted(glob.glob(os.path.join(save_dir, '*.npy')))
 
 
 def test_step(mel, idx):
@@ -25,10 +28,11 @@ def test_step(mel, idx):
     pred = np.power(10.0, pred * 0.05)
     wav = griffin_lim(pred ** 1.5)
     wav = scipy.signal.lfilter([1], [1, -preemphasis], wav)
-    wav = librosa.effects.trim(wav, frame_length=win_length, hop_length=hop_length)[0]
+    wav = librosa.effects.trim(
+        wav, frame_length=win_length, hop_length=hop_length)[0]
     wav = wav.astype(np.float32)
     sf.write(os.path.join(save_dir, '{}.wav'.format(idx)), wav, sample_rate)
-    
+
 
 model = post_CBHG(K=8, conv_dim=[256, mel_dim])
 optimizer = Adam()

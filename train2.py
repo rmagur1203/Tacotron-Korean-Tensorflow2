@@ -1,4 +1,7 @@
-import os, glob, random, traceback
+import os
+import glob
+import random
+import traceback
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
@@ -10,8 +13,8 @@ from util.hparams import *
 
 
 data_dir = './data'
-mel_list = glob.glob(os.path.join(data_dir + '/mel', '*.npy'))
-spec_list = glob.glob(os.path.join(data_dir + '/spec', '*.npy'))
+mel_list = sorted(glob.glob(os.path.join(data_dir + '/mel', '*.npy')))
+spec_list = sorted(glob.glob(os.path.join(data_dir + '/spec', '*.npy')))
 
 fn = os.path.join(data_dir + '/mel_len.py')
 if not os.path.isfile(fn):
@@ -28,9 +31,11 @@ mel_len = np.load(os.path.join(data_dir + '/mel_len.npy'))
 
 def DataGenerator():
     while True:
-        idx_list = np.random.choice(len(mel_list), batch_size * batch_size, replace=False)
+        idx_list = np.random.choice(
+            len(mel_list), batch_size * batch_size, replace=False)
         idx_list = sorted(idx_list)
-        idx_list = [idx_list[i : i + batch_size] for i in range(0, len(idx_list), batch_size)]
+        idx_list = [idx_list[i: i + batch_size]
+                    for i in range(0, len(idx_list), batch_size)]
         random.shuffle(idx_list)
 
         for idx in idx_list:
@@ -82,7 +87,8 @@ try:
         print("Step: {}, Loss: {:.5f}".format(int(checkpoint.step), loss))
 
         if int(checkpoint.step) % checkpoint_step == 0:
-            checkpoint.save(file_prefix=os.path.join(checkpoint_dir, 'step-{}'.format(int(checkpoint.step))))
+            checkpoint.save(file_prefix=os.path.join(
+                checkpoint_dir, 'step-{}'.format(int(checkpoint.step))))
 
 except Exception:
     traceback.print_exc()
