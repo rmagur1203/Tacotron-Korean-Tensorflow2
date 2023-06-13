@@ -2,3 +2,10 @@
 .vscode/
 data/
 kss/
+checkpoint/
+output/
+**/__pycache__/
+**/*.py[cod]
+**/$py.class
+*.py[cod]
+*.egg-info/
